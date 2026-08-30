@@ -53,15 +53,37 @@ Details: [`architecture.md`](https://github.com/mail-dock/context/blob/main/docs
 
 ## Features
 
-- **[Domains](https://github.com/mail-dock/mailserver/blob/main/docs/feature-docs/domains.md)** — many per server, with generated DNS records to publish.
-- **[Mailboxes](https://github.com/mail-dock/mailserver/blob/main/docs/feature-docs/mailboxes.md)** — IMAP/POP3 accounts with quotas, suspend, password reset; authenticated submission.
-- **[Aliases, forwarders, catch-all](https://github.com/mail-dock/mailserver/blob/main/docs/feature-docs/aliases-forwarders-catchall.md)** — the cPanel routing feature set, all pure data.
-- **[REST API](https://github.com/mail-dock/mailserver/blob/main/docs/feature-docs/rest-api.md)** — `/api/v1` with OpenAPI generated from the schemas; the integrator contract and what every client uses.
-- **[Headless install](https://github.com/mail-dock/mailserver/blob/main/docs/feature-docs/headless-install.md)** — one answers file, no browser, for MSPs and CI.
-- **TLS** — Caddy with ACME, or bring your own certificate.
-- **Spam & signing** — Rspamd for filtering, DKIM, ARC and DMARC.
-- **Licensing** — signed keys with offline grace and graceful degrade; **mail never stops.**
-- **AI** — customer's own provider key or a local model. We ship no inference.
+### Mail
+
+**[Domains](https://github.com/mail-dock/mailserver/blob/main/docs/feature-docs/domains.md)** — many domains on one server. Add one and Postfix accepts mail for it immediately; nothing is rendered and no daemon reloads. Each domain carries a default mailbox quota, and an `active` flag that stops inbound acceptance and IMAP login across the whole domain without deleting anything. The API returns the DNS records to publish — A, MX, SPF, DMARC, IMAP/SMTP SRV autodiscover and PTR.
+
+**[Mailboxes](https://github.com/mail-dock/mailserver/blob/main/docs/feature-docs/mailboxes.md)** — IMAP and POP3 accounts stored as Maildir, with quotas enforced by Dovecot. Argon2id passwords, admin-initiated resets, and suspend, which rejects mail at SMTP time rather than queueing it. Sending is authenticated submission on `:587` or `:465`, with the envelope sender pinned to the mailbox or an alias that points at it.
+
+**[Aliases, forwarders and catch-all](https://github.com/mail-dock/mailserver/blob/main/docs/feature-docs/aliases-forwarders-catchall.md)** — the cPanel routing set, all pure data. One alias to as many as 50 local or remote destinations; per-mailbox forwarders that optionally keep a local copy; a domain catch-all, or the safer default of rejecting unknown recipients outright to protect reputation.
+
+**Spam, signing and TLS** — Rspamd runs as a Postfix milter for filtering, DKIM, ARC and DMARC, with thresholds you set per server. Caddy terminates TLS with ACME, or you bring your own certificate; a cert-sync sidecar pushes renewals into Postfix and Dovecot within 30 seconds.
+
+### Control plane
+
+**[REST API](https://github.com/mail-dock/mailserver/blob/main/docs/feature-docs/rest-api.md)** — `/api/v1`, with OpenAPI 3.1 generated from the Zod schemas and Swagger UI at `/api/v1/docs`. The Setup Wizard, admin UI and `mailctl` all go through it, so anything you can click you can script.
+
+**Auth and audit** — 15-minute JWTs with rotating refresh cookies, TOTP for admin roles, and revocable `msk_` tokens for integrators. Four roles from owner down to mailbox user. Every mutation writes an audit entry with actor, before/after and IP.
+
+**Versioned configuration** — server settings are typed data, not files. Preview a render without applying it, apply with validate-before-reload, browse the history with each version's validator output, and roll back to any earlier one.
+
+### Install and operations
+
+**One command to working mail** — the bootstrap script installs Docker and `mailctl`; `mailctl install` runs preflight on ports, DNS, memory and disk, brings up the stack, and hands off to the Setup Wizard.
+
+**[Headless install](https://github.com/mail-dock/mailserver/blob/main/docs/feature-docs/headless-install.md)** — one answers file drives the same API the wizard uses, for MSPs, scripted provisioning and CI.
+
+**Day two** — `mailctl doctor` diagnoses host, DNS, services and API in one read-only pass. `backup` and `restore` cover the database, all mail and the environment file, with checksums verified before anything is written. `upgrade` takes a backup first, so rolling back is restoring it.
+
+### Licensing and AI
+
+**Licensing** — Ed25519-signed keys verified offline against an embedded public key, bound to a server fingerprint with a mailbox cap and expiry. A daily heartbeat refreshes the key; 30 days without one degrades the server — no new mailboxes or domains, AI off — while delivery, IMAP and webmail keep running.
+
+**AI** — bring your own key (Anthropic, OpenAI-compatible) or point at a local model (Ollama, vLLM). We ship the orchestration and prompts, never the inference. Off until configured, with per-user opt-in, per-domain policy, attachments excluded by default, a metadata-only audit log, and a local-only flag that refuses non-private endpoints.
 
 Every feature has a doc in [`feature-docs/`](https://github.com/mail-dock/mailserver/tree/main/docs/feature-docs).
 

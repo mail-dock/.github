@@ -22,14 +22,6 @@ Architecture and decisions: [`architecture.md`](https://github.com/mail-dock/con
 
 ---
 
-### Install and operations
-
-**One command to working mail** — the bootstrap script installs Docker and `mailctl`; `mailctl install` runs preflight on ports, DNS, memory and disk, brings up the stack, and hands off to the Setup Wizard.
-
-**[Headless install](https://github.com/mail-dock/mailserver/blob/main/docs/feature-docs/headless-install.md)** — one answers file drives the same API the wizard uses, for MSPs, scripted provisioning and CI.
-
-**Day two** — `mailctl doctor` diagnoses host, DNS, services and API in one read-only pass. `backup` and `restore` cover the database, all mail and the environment file, with checksums verified before anything is written. `upgrade` takes a backup first, so rolling back is restoring it.
-
 ## Features
 
 ### Mail
@@ -49,6 +41,14 @@ Architecture and decisions: [`architecture.md`](https://github.com/mail-dock/con
 **Auth and audit** — 15-minute JWTs with rotating refresh cookies, TOTP for admin roles, and revocable `msk_` tokens for integrators. Four roles from owner down to mailbox user. Every mutation writes an audit entry with actor, before/after and IP.
 
 **Versioned configuration** — server settings are typed data, not files. Preview a render without applying it, apply with validate-before-reload, browse the history with each version's validator output, and roll back to any earlier one.
+
+### Install and operations
+
+**One command to working mail** — the bootstrap script installs Docker and `mailctl`; `mailctl install` runs preflight on ports, DNS, memory and disk, brings up the stack, and hands off to the Setup Wizard.
+
+**[Headless install](https://github.com/mail-dock/mailserver/blob/main/docs/feature-docs/headless-install.md)** — one answers file drives the same API the wizard uses, for MSPs, scripted provisioning and CI.
+
+**Day two** — `mailctl doctor` diagnoses host, DNS, services and API in one read-only pass. `backup` and `restore` cover the database, all mail and the environment file, with checksums verified before anything is written. `upgrade` takes a backup first, so rolling back is restoring it.
 
 ### AI
 
